@@ -19,6 +19,7 @@ align: top
 `;
 
 const MM_TO_CSS_PX = 96 / 25.4;
+const UNITS = ["rem", "px", "pt"];
 
 export default function Home() {
   const [markdown, setMarkdown] = useState(DEFAULT_MD);
@@ -31,6 +32,15 @@ export default function Home() {
   const [regularFont, setRegularFont] = useState("");
   const [boldColor, setBoldColor] = useState("#111111");
   const [regularColor, setRegularColor] = useState("#888888");
+  const [boldSize, setBoldSize] = useState("1.1");
+  const [boldUnit, setBoldUnit] = useState("rem");
+  const [regularSize, setRegularSize] = useState("1.1");
+  const [regularUnit, setRegularUnit] = useState("rem");
+  const [headingFont, setHeadingFont] = useState("");
+  const [headingColor, setHeadingColor] = useState("#111111");
+  const [headingSize, setHeadingSize] = useState("2.4");
+  const [headingUnit, setHeadingUnit] = useState("rem");
+  const [bgColor, setBgColor] = useState("#ffffff");
   const printFrameRef = useRef<HTMLIFrameElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,7 +53,14 @@ export default function Home() {
       });
   }, []);
 
-  const buildHtml = useCallback(async (md: string, bold: string, regular: string, boldCol: string, regularCol: string) => {
+  const buildHtml = useCallback(async (
+    md: string,
+    bold: string, regular: string,
+    boldCol: string, regularCol: string,
+    bSize: string, rSize: string,
+    heading: string, headingCol: string, hSize: string,
+    bg: string,
+  ) => {
     const { frontmatter, blocks } = parse(md);
     let customCss: string | undefined;
     if (frontmatter.css) {
@@ -52,7 +69,7 @@ export default function Home() {
         if (res.ok) customCss = await res.text();
       } catch {}
     }
-    return render(blocks, frontmatter, bold, regular, boldCol, regularCol, customCss);
+    return render(blocks, frontmatter, bold, regular, boldCol, regularCol, bSize, rSize, heading, headingCol, hSize, bg, customCss);
   }, []);
 
   useEffect(() => {
@@ -60,12 +77,30 @@ export default function Home() {
     debounceRef.current = setTimeout(async () => {
       const { frontmatter } = parse(markdown);
       setPageSize(PAGE_SIZES[frontmatter.size ?? "b6"]);
-      setPreviewHtml(await buildHtml(markdown, boldFont, regularFont, boldColor, regularColor));
+      setPreviewHtml(await buildHtml(
+        markdown,
+        boldFont, regularFont,
+        boldColor, regularColor,
+        `${boldSize}${boldUnit}`, `${regularSize}${regularUnit}`,
+        headingFont, headingColor, `${headingSize}${headingUnit}`,
+        bgColor,
+      ));
     }, 300);
-  }, [markdown, boldFont, regularFont, boldColor, regularColor, buildHtml]);
+  }, [
+    markdown, boldFont, regularFont, boldColor, regularColor,
+    boldSize, boldUnit, regularSize, regularUnit,
+    headingFont, headingColor, headingSize, headingUnit,
+    buildHtml, bgColor,
+  ]);
 
   const handlePrint = async () => {
-    const html = await buildHtml(markdown, boldFont, regularFont, boldColor, regularColor);
+    const html = await buildHtml(
+      markdown,
+      boldFont, regularFont,
+      boldColor, regularColor,
+      `${boldSize}${boldUnit}`, `${regularSize}${regularUnit}`,
+      headingFont, headingColor, `${headingSize}${headingUnit}`,
+    );
     const frame = printFrameRef.current;
     if (!frame) return;
     frame.srcdoc = html;
@@ -94,7 +129,6 @@ export default function Home() {
             </button>
           ))}
         </div>
-
         <button className="btn-primary" onClick={handlePrint}>
           PDF 내보내기
         </button>
@@ -107,7 +141,10 @@ export default function Home() {
             <option value="">Noto Sans</option>
             {boldFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
-          <input type="color" value={boldColor} onChange={(e) => setBoldColor(e.target.value)} className="color-swatch" />
+          <input type="number" value={boldSize} onChange={(e) => setBoldSize(e.target.value)} className="size-input" step="0.1" min="0.1" />
+          <select value={boldUnit} onChange={(e) => setBoldUnit(e.target.value)} className="font-select">
+            {UNITS.map((u) => <option key={u}>{u}</option>)}
+          </select>
           <input type="text" value={boldColor} onChange={(e) => setBoldColor(e.target.value)} className="color-input" />
         </label>
         <label className="font-label">
@@ -116,8 +153,30 @@ export default function Home() {
             <option value="">Noto Sans</option>
             {regularFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
-          <input type="color" value={regularColor} onChange={(e) => setRegularColor(e.target.value)} className="color-swatch" />
+          <input type="number" value={regularSize} onChange={(e) => setRegularSize(e.target.value)} className="size-input" step="0.1" min="0.1" />
+          <select value={regularUnit} onChange={(e) => setRegularUnit(e.target.value)} className="font-select">
+            {UNITS.map((u) => <option key={u}>{u}</option>)}
+          </select>
           <input type="text" value={regularColor} onChange={(e) => setRegularColor(e.target.value)} className="color-input" />
+        </label>
+      </div>
+
+      <div className="toolbar">
+        <label className="font-label">
+          제목체
+          <select value={headingFont} onChange={(e) => setHeadingFont(e.target.value)} className="font-select">
+            <option value="">Noto Sans</option>
+            {boldFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <input type="number" value={headingSize} onChange={(e) => setHeadingSize(e.target.value)} className="size-input" step="0.1" min="0.1" />
+          <select value={headingUnit} onChange={(e) => setHeadingUnit(e.target.value)} className="font-select">
+            {UNITS.map((u) => <option key={u}>{u}</option>)}
+          </select>
+          <input type="text" value={headingColor} onChange={(e) => setHeadingColor(e.target.value)} className="color-input" />
+        </label>
+        <label className="font-label">
+          배경색
+          <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="color-input" />
         </label>
       </div>
 

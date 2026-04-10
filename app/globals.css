@@ -164,3 +164,14 @@ html, body {
   flex-shrink: 0;
   flex-wrap: wrap;
 }
+
+.size-input {
+  font-size: 12px;
+  width: 52px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  border: 1px solid #e0d9ce;
+  background: #fff;
+  color: #1a1a1a;
+  text-align: right;
+}
