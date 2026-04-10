@@ -7,11 +7,9 @@ export type Block =
   | { type: "divider" };
 
 export interface Frontmatter {
-  size?: "b6" | "gukpan" | "singukpan";
+  size?: "b6" | "a5" | "ma5";
   linebreak?: "auto" | "manual";
-  boldfont?: string;
-  regularfont?: string;
-  "text-option"?: "top" | "middle" | "bottom";
+  align?: "top" | "middle" | "bottom";
   css?: string;
 }
 

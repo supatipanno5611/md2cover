@@ -34,6 +34,7 @@ export default function Editor({ value, onChange }: Props) {
           basicSetup,
           markdown(),
           editorTheme,
+          EditorView.lineWrapping,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChange(update.state.doc.toString());
           }),

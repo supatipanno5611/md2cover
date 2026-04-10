@@ -10,16 +10,12 @@ const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 const DEFAULT_MD = `---
 size: b6
 linebreak: auto
-boldfont: 
-regularfont: 
-text-option: top
+align: top
 ---
 
 # 제목을 입력하세요.
 
 원하는 결과물을 만들기 위해 **필요한 효과와 기술만 간결하게** 사용하며 **빠른 작업 속도**를 추구합니다. 그 이후엔 필요 없는 **절차는 모두 과감히 생략**하고 기존의 목표에만 충실할 수 있도록 주의를 기울입니다.
-
----
 `;
 
 const MM_TO_CSS_PX = 96 / 25.4;
@@ -29,10 +25,25 @@ export default function Home() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [pageSize, setPageSize] = useState(PAGE_SIZES["b6"]);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
+  const [boldFonts, setBoldFonts] = useState<string[]>([]);
+  const [regularFonts, setRegularFonts] = useState<string[]>([]);
+  const [boldFont, setBoldFont] = useState("");
+  const [regularFont, setRegularFont] = useState("");
+  const [boldColor, setBoldColor] = useState("#111111");
+  const [regularColor, setRegularColor] = useState("#888888");
   const printFrameRef = useRef<HTMLIFrameElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const buildHtml = useCallback(async (md: string) => {
+  useEffect(() => {
+    fetch("/api/fonts")
+      .then((r) => r.json())
+      .then((data) => {
+        setBoldFonts(data.bold);
+        setRegularFonts(data.regular);
+      });
+  }, []);
+
+  const buildHtml = useCallback(async (md: string, bold: string, regular: string, boldCol: string, regularCol: string) => {
     const { frontmatter, blocks } = parse(md);
     let customCss: string | undefined;
     if (frontmatter.css) {
@@ -41,7 +52,7 @@ export default function Home() {
         if (res.ok) customCss = await res.text();
       } catch {}
     }
-    return render(blocks, frontmatter, customCss);
+    return render(blocks, frontmatter, bold, regular, boldCol, regularCol, customCss);
   }, []);
 
   useEffect(() => {
@@ -49,12 +60,12 @@ export default function Home() {
     debounceRef.current = setTimeout(async () => {
       const { frontmatter } = parse(markdown);
       setPageSize(PAGE_SIZES[frontmatter.size ?? "b6"]);
-      setPreviewHtml(await buildHtml(markdown));
+      setPreviewHtml(await buildHtml(markdown, boldFont, regularFont, boldColor, regularColor));
     }, 300);
-  }, [markdown, buildHtml]);
+  }, [markdown, boldFont, regularFont, boldColor, regularColor, buildHtml]);
 
   const handlePrint = async () => {
-    const html = await buildHtml(markdown);
+    const html = await buildHtml(markdown, boldFont, regularFont, boldColor, regularColor);
     const frame = printFrameRef.current;
     if (!frame) return;
     frame.srcdoc = html;
@@ -72,8 +83,6 @@ export default function Home() {
       <iframe ref={printFrameRef} style={{ display: "none" }} title="print-frame" />
 
       <header className="header">
-        <span className="header-title">md2cover</span>
-
         <div className="tab-group">
           {(["editor", "preview"] as const).map((t) => (
             <button
@@ -90,6 +99,27 @@ export default function Home() {
           PDF 내보내기
         </button>
       </header>
+
+      <div className="toolbar">
+        <label className="font-label">
+          강조체
+          <select value={boldFont} onChange={(e) => setBoldFont(e.target.value)} className="font-select">
+            <option value="">Noto Sans</option>
+            {boldFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <input type="color" value={boldColor} onChange={(e) => setBoldColor(e.target.value)} className="color-swatch" />
+          <input type="text" value={boldColor} onChange={(e) => setBoldColor(e.target.value)} className="color-input" />
+        </label>
+        <label className="font-label">
+          흐림체
+          <select value={regularFont} onChange={(e) => setRegularFont(e.target.value)} className="font-select">
+            <option value="">Noto Sans</option>
+            {regularFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <input type="color" value={regularColor} onChange={(e) => setRegularColor(e.target.value)} className="color-swatch" />
+          <input type="text" value={regularColor} onChange={(e) => setRegularColor(e.target.value)} className="color-input" />
+        </label>
+      </div>
 
       <div className={`panel${tab === "editor" ? "" : " hidden"}`}>
         <div className="editor-wrap">

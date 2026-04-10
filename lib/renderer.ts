@@ -2,8 +2,8 @@ import { Block, Frontmatter, InlineSegment } from "./parser";
 
 export const PAGE_SIZES: Record<string, { width: string; height: string }> = {
   b6: { width: "128mm", height: "182mm" },
-  gukpan: { width: "148mm", height: "210mm" },
-  singukpan: { width: "153mm", height: "225mm" },
+  a5: { width: "148mm", height: "210mm" },
+  ma5: { width: "153mm", height: "225mm" },
 };
 
 function renderSegments(segments: InlineSegment[]): string {
@@ -15,19 +15,21 @@ function renderSegments(segments: InlineSegment[]): string {
 export function render(
   blocks: Block[],
   frontmatter: Frontmatter,
+  boldFont: string,
+  regularFont: string,
+  boldColor: string,
+  regularColor: string,
   customCss?: string
 ): string {
   const size = PAGE_SIZES[frontmatter.size ?? "b6"];
-  const textOption = frontmatter["text-option"] ?? "top";
-  const boldFont = frontmatter.boldfont ?? "";
-  const regularFont = frontmatter.regularfont ?? "";
+  const textOption = frontmatter.align ?? "top";
 
   const alignMap = { top: "flex-start", middle: "center", bottom: "flex-end" };
   const justifyContent = alignMap[textOption];
 
   const fontFaces = [
-    boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/${boldFont}'); }`,
-    regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/${regularFont}'); }`,
+    boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
+    regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
@@ -43,25 +45,25 @@ export function render(
       overflow: hidden;
     }
     h1 {
-      font-family: ${boldFont ? "'CoverBold'" : "sans-serif"};
+      font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
       font-weight: 900;
       font-size: 2.4rem;
       line-height: 1.25;
-      color: #111;
+      color: ${boldColor};
       margin-bottom: 6mm;
     }
     p {
-      font-family: ${regularFont ? "'CoverRegular'" : "sans-serif"};
+      font-family: ${regularFont ? "'CoverRegular'" : "'Noto Sans', sans-serif"};
       font-weight: 300;
       font-size: 1.1rem;
       line-height: 1.7;
-      color: #888;
+      color: ${regularColor};
       margin-bottom: 4mm;
     }
     strong {
-      font-family: ${boldFont ? "'CoverBold'" : "sans-serif"};
+      font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
       font-weight: 900;
-      color: #111;
+      color: ${boldColor};
     }
     hr {
       border: none;
