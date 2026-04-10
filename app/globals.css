@@ -1,8 +1,140 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 html, body {
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f0e8;
+  color: #1a1a1a;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: #f5f0e8;
+  border-bottom: 1px solid #e0d9ce;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.tab-group {
+  display: flex;
+  gap: 2px;
+  background: #e8e1d6;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tab-btn {
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #888;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.tab-btn.active {
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+  font-size: 12px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #1a1a1a;
+  color: #fff;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.btn-primary:hover {
+  opacity: 0.8;
+}
+
+/* 패널 */
+.panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel.hidden {
+  display: none;
+}
+
+/* 에디터 */
+.editor-wrap {
+  flex: 1;
+  overflow: hidden;
+  background: #faf7f2;
+}
+
+/* 미리보기 */
+.preview-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e0d9ce;
+  flex-shrink: 0;
+}
+
+.view-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #999;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.view-btn.active {
+  background: #e8e1d6;
+  color: #1a1a1a;
+}
+
+.preview-scroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+  background: #eee8de;
+}
+
+.preview-shadow {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+  flex-shrink: 0;
 }

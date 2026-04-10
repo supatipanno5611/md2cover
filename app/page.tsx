@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { parse } from "@/lib/parser";
-import { render } from "@/lib/renderer";
+import { render, PAGE_SIZES } from "@/lib/renderer";
 
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 
@@ -22,15 +22,20 @@ text-option: top
 ---
 `;
 
+const MM_TO_CSS_PX = 96 / 25.4;
+
 export default function Home() {
   const [markdown, setMarkdown] = useState(DEFAULT_MD);
   const [previewHtml, setPreviewHtml] = useState("");
+  const [pageSize, setPageSize] = useState(PAGE_SIZES["b6"]);
+  const [tab, setTab] = useState<"editor" | "preview">("editor");
+  const [scaleMode, setScaleMode] = useState(false);
   const printFrameRef = useRef<HTMLIFrameElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const buildHtml = useCallback(async (md: string) => {
     const { frontmatter, blocks } = parse(md);
-
     let customCss: string | undefined;
     if (frontmatter.css) {
       try {
@@ -38,13 +43,14 @@ export default function Home() {
         if (res.ok) customCss = await res.text();
       } catch {}
     }
-
     return render(blocks, frontmatter, customCss);
   }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      const { frontmatter } = parse(markdown);
+      setPageSize(PAGE_SIZES[frontmatter.size ?? "b6"]);
       setPreviewHtml(await buildHtml(markdown));
     }, 300);
   }, [markdown, buildHtml]);
@@ -60,46 +66,78 @@ export default function Home() {
     };
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
-      <iframe ref={printFrameRef} className="hidden" title="print-frame" />
+  const realW = parseFloat(pageSize.width) * MM_TO_CSS_PX;
+  const realH = parseFloat(pageSize.height) * MM_TO_CSS_PX;
+  const containerW = previewContainerRef.current?.clientWidth ?? 600;
+  const scale = (containerW - 64) / realW;
+  const scaledH = realH * scale;
 
-      <header className="flex items-center justify-between px-5 py-3 border-b border-gray-800 shrink-0">
-        <span className="font-semibold tracking-tight text-sm">md2cover</span>
-        <button
-          onClick={handlePrint}
-          className="text-xs bg-white text-gray-900 font-medium px-3 py-1.5 rounded hover:bg-gray-200 transition-colors"
-        >
+  return (
+    <div id="app">
+      <iframe ref={printFrameRef} style={{ display: "none" }} title="print-frame" />
+
+      <header className="header">
+        <span className="header-title">md2cover</span>
+
+        <div className="tab-group">
+          {(["editor", "preview"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`tab-btn${tab === t ? " active" : ""}`}
+            >
+              {t === "editor" ? "에디터" : "미리보기"}
+            </button>
+          ))}
+        </div>
+
+        <button className="btn-primary" onClick={handlePrint}>
           PDF 내보내기
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/2 border-r border-gray-800 flex flex-col overflow-hidden">
-          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-800 shrink-0">
-            마크다운
-          </div>
-          <div className="flex-1 overflow-hidden bg-gray-900">
-            <Editor value={markdown} onChange={setMarkdown} />
-          </div>
+      <div className={`panel${tab === "editor" ? "" : " hidden"}`}>
+        <div className="editor-wrap">
+          <Editor value={markdown} onChange={setMarkdown} />
+        </div>
+      </div>
+
+      <div className={`panel${tab === "preview" ? "" : " hidden"}`}>
+        <div className="preview-toolbar">
+          {(["실물 크기", "전체 보기"] as const).map((label, i) => {
+            const isScale = i === 1;
+            return (
+              <button
+                key={label}
+                onClick={() => setScaleMode(isScale)}
+                className={`view-btn${scaleMode === isScale ? " active" : ""}`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="w-1/2 flex flex-col bg-gray-900">
-          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-800 shrink-0">
-            미리보기
-          </div>
-          <div className="flex-1 flex items-start justify-center p-8 overflow-auto">
-            {previewHtml ? (
+        <div ref={previewContainerRef} className="preview-scroll">
+          {previewHtml ? (
+            scaleMode ? (
+              <div style={{ width: `${containerW - 64}px`, height: `${scaledH}px`, flexShrink: 0 }}>
+                <iframe
+                  srcDoc={previewHtml}
+                  style={{ border: "none", width: `${realW}px`, height: `${realH}px`, transform: `scale(${scale})`, transformOrigin: "top left" }}
+                  title="preview"
+                  className="preview-shadow"
+                />
+              </div>
+            ) : (
               <iframe
                 srcDoc={previewHtml}
-                style={{ border: "none", width: "360px", height: "512px" }}
+                style={{ border: "none", width: `${realW}px`, height: `${realH}px` }}
                 title="preview"
-                className="shadow-2xl"
+                className="preview-shadow"
               />
-            ) : (
-              <div className="text-gray-600 text-sm mt-20">로딩 중…</div>
-            )}
-          </div>
+            )
+          ) : null}
         </div>
       </div>
     </div>

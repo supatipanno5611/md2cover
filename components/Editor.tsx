@@ -11,9 +11,14 @@ interface Props {
 }
 
 const editorTheme = EditorView.theme({
-  "&": { height: "100%", fontSize: "14px" },
-  ".cm-scroller": { overflow: "auto", fontFamily: "monospace" },
-  ".cm-content": { padding: "16px" },
+  "&": { height: "100%", fontSize: "14px", background: "#faf7f2" },
+  ".cm-scroller": { overflow: "auto", fontFamily: "'Menlo', 'Monaco', monospace" },
+  ".cm-content": { padding: "20px 24px", caretColor: "#1a1a1a" },
+  ".cm-gutters": { background: "#f2ede6", border: "none", color: "#bbb" },
+  ".cm-activeLineGutter": { background: "#ebe5dc" },
+  ".cm-activeLine": { background: "#f0ebe3" },
+  ".cm-cursor": { borderLeftColor: "#1a1a1a" },
+  ".cm-selectionBackground": { background: "#ddd6c8 !important" },
 });
 
 export default function Editor({ value, onChange }: Props) {
@@ -50,5 +55,5 @@ export default function Editor({ value, onChange }: Props) {
     }
   }, [value]);
 
-  return <div ref={ref} className="h-full" />;
+  return <div ref={ref} style={{ height: "100%" }} />;
 }
