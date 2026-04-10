@@ -11,6 +11,7 @@ export type Block =
   | { type: "divider" }
   | { type: "bg-big"; rotate: number; text: string }
   | { type: "bg-repeat"; rotate: number; gap: number; text: string }
+  | { type: "bg-continuous"; rotate: number; gap: number; text: string }
   | { type: "bg-dummy"; lineHeight: number; text: string };
 
 export interface Frontmatter {
@@ -54,9 +55,10 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[];
 
       const bgBigMatch = tag.match(/^bg-big-(-?\d+)$/);
       const bgRepeatMatch = tag.match(/^bg-repeat-(-?\d+)-(\d+)$/);
+      const bgContinuousMatch = tag.match(/^bg-continuous-(-?\d+)-(\d+)$/);
       const bgDummyMatch = tag.match(/^bg-dummy-(\d+(?:\.\d+)?)$/);
 
-      if (bgBigMatch || bgRepeatMatch || bgDummyMatch) {
+      if (bgBigMatch || bgRepeatMatch || bgContinuousMatch || bgDummyMatch) {
         bgCount++;
         i++;
         const bodyLines: string[] = [];
@@ -69,6 +71,8 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[];
           blocks.push({ type: "bg-big", rotate: Number(bgBigMatch[1]), text });
         } else if (bgRepeatMatch) {
           blocks.push({ type: "bg-repeat", rotate: Number(bgRepeatMatch[1]), gap: Number(bgRepeatMatch[2]), text });
+        } else if (bgContinuousMatch) {
+          blocks.push({ type: "bg-continuous", rotate: Number(bgContinuousMatch[1]), gap: Number(bgContinuousMatch[2]), text });
         } else if (bgDummyMatch) {
           blocks.push({ type: "bg-dummy", lineHeight: Number(bgDummyMatch[1]), text });
         }

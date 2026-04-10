@@ -57,6 +57,30 @@ function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: st
 </script>`;
   }
 
+  if (block.type === "bg-continuous") {
+    return `
+<div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;">
+  <div id="bg-continuous-inner" style="position:absolute;font-family:${fontFamily};font-size:${bgSize};line-height:${block.gap}px;color:${bgColor};word-break:break-all;overflow:hidden;"></div>
+</div>
+<script>
+(function() {
+  setTimeout(function() {
+    var el = document.getElementById('bg-continuous-inner');
+    var body = document.body;
+    var w = body.offsetWidth;
+    var h = body.offsetHeight;
+    var size = Math.ceil(Math.sqrt(w * w + h * h));
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = ((w - size) / 2) + 'px';
+    el.style.top = ((h - size) / 2) + 'px';
+    el.style.transform = 'rotate(${block.rotate}deg)';
+    el.textContent = '${block.text.replace(/'/g, "\\'").replace(/\s+/g, "·")} ·'.repeat(100);
+  }, 100);
+})();
+</script>`;
+  }
+
   if (block.type === "bg-dummy") {
     return `
 <div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;padding:12mm 10mm;">
@@ -169,11 +193,11 @@ export function render(
     .vertical-right { right: 10mm; }
   `;
 
-  const bgBlock = blocks.find((b) => b.type === "bg-big" || b.type === "bg-repeat" || b.type === "bg-dummy");
+  const bgBlock = blocks.find((b) => b.type === "bg-big" || b.type === "bg-repeat" || b.type === "bg-continuous" || b.type === "bg-dummy");
   const bgHtml = bgBlock ? renderBgBlock(bgBlock, bgFont, bgTextColor, bgSize) : "";
 
   const bodyLines = blocks
-    .filter((b) => b.type !== "bg-big" && b.type !== "bg-repeat" && b.type !== "bg-dummy")
+    .filter((b) => b.type !== "bg-big" && b.type !== "bg-repeat" && b.type !== "bg-continuous" && b.type !== "bg-dummy")
     .map((block) => {
       if (block.type === "divider") return `<hr>`;
       if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
