@@ -12,6 +12,61 @@ function renderSegments(segments: InlineSegment[]): string {
     .join("");
 }
 
+function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: string): string {
+  const fontFamily = bgFont ? "'CoverBg'" : "'Noto Sans', sans-serif";
+
+  if (block.type === "bg-big") {
+    return `
+<div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+  <div style="font-family:${fontFamily};font-size:${bgSize};line-height:1;white-space:nowrap;transform:rotate(${block.rotate}deg);color:${bgColor};">${block.text}</div>
+</div>`;
+  }
+
+  if (block.type === "bg-repeat") {
+    return `
+<div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;">
+  <div id="bg-repeat-inner" data-text="${block.text.replace(/"/g, "&quot;")}" data-rotate="${block.rotate}" data-gap="${block.gap}" style="font-family:${fontFamily};color:${bgColor};position:absolute;"></div>
+</div>
+<script>
+(function() {
+  setTimeout(function() {
+    var el = document.getElementById('bg-repeat-inner');
+    var body = document.body;
+    var w = body.offsetWidth;
+    var h = body.offsetHeight;
+    var size = Math.ceil(Math.sqrt(w * w + h * h));
+    var rotate = ${block.rotate};
+    var gap = ${block.gap};
+    var text = el.dataset.text;
+    var rows = Math.ceil(size / gap) + 2;
+    var chWidth = gap * 0.6;
+    var repeat = Math.ceil(size / chWidth / text.length) + 2;
+    var repeated = (text + '\u3000').repeat(repeat);
+    var html = '';
+    for (var r = 0; r < rows; r++) {
+      html += '<div style="white-space:nowrap;line-height:1;margin-bottom:' + gap + 'px;font-size:${bgSize};">' + repeated + '</div>';
+    }
+    el.innerHTML = html;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = ((w - size) / 2) + 'px';
+    el.style.top = ((h - size) / 2) + 'px';
+    el.style.transform = 'rotate(' + rotate + 'deg)';
+  }, 100);
+})();
+</script>`;
+  }
+
+  if (block.type === "bg-dummy") {
+    return `
+<div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;padding:12mm 10mm;">
+  <div style="font-family:${fontFamily};font-size:${bgSize};color:${bgColor};text-align:justify;line-height:${block.lineHeight};">${block.text}</div>
+</div>`;
+  }
+
+  return "";
+}
+
 export function render(
   blocks: Block[],
   frontmatter: Frontmatter,
@@ -25,7 +80,9 @@ export function render(
   headingColor: string,
   headingSize: string,
   bgColor: string,
-  customCss?: string
+  bgFont: string,
+  bgTextColor: string,
+  bgSize: string,
 ): string {
   const size = PAGE_SIZES[frontmatter.size ?? "b6"];
   const textOption = frontmatter.align ?? "top";
@@ -35,6 +92,7 @@ export function render(
   const fontFaces = [
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
+    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/bg/${bgFont}'); }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
@@ -56,6 +114,8 @@ export function render(
       line-height: 1.25;
       color: ${headingColor};
       margin-bottom: 6mm;
+      position: relative;
+      z-index: 1;
     }
     p {
       font-family: ${regularFont ? "'CoverRegular'" : "'Noto Sans', sans-serif"};
@@ -63,6 +123,8 @@ export function render(
       line-height: 1.7;
       color: ${regularColor};
       margin-bottom: 4mm;
+      position: relative;
+      z-index: 1;
     }
     strong {
       font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
@@ -72,6 +134,8 @@ export function render(
       border: none;
       border-top: 1px solid #ddd;
       margin: 4mm 0;
+      position: relative;
+      z-index: 1;
     }
     .pos {
       position: absolute;
@@ -80,6 +144,7 @@ export function render(
       font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
       font-size: ${boldSize};
       color: ${boldColor};
+      z-index: 1;
     }
     .pos-top { top: 12mm; }
     .pos-bottom { bottom: 12mm; }
@@ -98,25 +163,31 @@ export function render(
       color: ${boldColor};
       line-height: 1.25;
       justify-content: center;
+      z-index: 1;
     }
     .vertical-left { left: 10mm; }
     .vertical-right { right: 10mm; }
   `;
 
-  const bodyLines = blocks.map((block) => {
-    if (block.type === "divider") return `<hr>`;
-    if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
-    if (block.type === "paragraph") return `<p>${renderSegments(block.segments)}</p>`;
-    if (block.type === "flow") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
-    if (block.type === "position") {
-      return `<p class="pos pos-${block.placement} pos-${block.align}">${renderSegments(block.segments)}</p>`;
-    }
-    if (block.type === "vertical") {
-      const charSpans = block.chars.map((ch) => `<span>${ch}</span>`).join("\n");
-      return `<div class="vertical vertical-${block.side}">${charSpans}</div>`;
-    }
-    return "";
-  });
+  const bgBlock = blocks.find((b) => b.type === "bg-big" || b.type === "bg-repeat" || b.type === "bg-dummy");
+  const bgHtml = bgBlock ? renderBgBlock(bgBlock, bgFont, bgTextColor, bgSize) : "";
+
+  const bodyLines = blocks
+    .filter((b) => b.type !== "bg-big" && b.type !== "bg-repeat" && b.type !== "bg-dummy")
+    .map((block) => {
+      if (block.type === "divider") return `<hr>`;
+      if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
+      if (block.type === "paragraph") return `<p>${renderSegments(block.segments)}</p>`;
+      if (block.type === "flow") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
+      if (block.type === "position") {
+        return `<p class="pos pos-${block.placement} pos-${block.align}">${renderSegments(block.segments)}</p>`;
+      }
+      if (block.type === "vertical") {
+        const charSpans = block.chars.map((ch) => `<span>${ch}</span>`).join("\n");
+        return `<div class="vertical vertical-${block.side}">${charSpans}</div>`;
+      }
+      return "";
+    });
 
   return `<!DOCTYPE html>
 <html>
@@ -124,10 +195,11 @@ export function render(
 <meta charset="utf-8">
 <style>
 ${fontFaces}
-${customCss ?? defaultCss}
+${defaultCss}
 </style>
 </head>
 <body>
+${bgHtml}
 ${bodyLines.join("\n")}
 </body>
 </html>`;

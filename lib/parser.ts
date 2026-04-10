@@ -8,7 +8,10 @@ export type Block =
   | { type: "flow"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
   | { type: "position"; placement: "top" | "bottom"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
   | { type: "vertical"; side: "left" | "right"; chars: string[] }
-  | { type: "divider" };
+  | { type: "divider" }
+  | { type: "bg-big"; rotate: number; text: string }
+  | { type: "bg-repeat"; rotate: number; gap: number; text: string }
+  | { type: "bg-dummy"; lineHeight: number; text: string };
 
 export interface Frontmatter {
   size?: "b6" | "a5" | "ma5";
@@ -34,11 +37,12 @@ const FLOW_ALIGNS = ["left", "center", "right", "justify"] as const;
 const FLOW_ALIGNS_BR = ["left-br", "center-br", "right-br", "justify-br"] as const;
 type FlowAlign = typeof FLOW_ALIGNS[number];
 
-export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] } {
+export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[]; bgWarning: boolean } {
   const { data, content } = matter(raw);
   const frontmatter = data as Frontmatter;
   const blocks: Block[] = [];
   const lines = content.split("\n");
+  let bgCount = 0;
 
   let i = 0;
   while (i < lines.length) {
@@ -48,7 +52,30 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
     if (fenceMatch) {
       const tag = fenceMatch[1];
 
-      // vertical
+      const bgBigMatch = tag.match(/^bg-big-(-?\d+)$/);
+      const bgRepeatMatch = tag.match(/^bg-repeat-(-?\d+)-(\d+)$/);
+      const bgDummyMatch = tag.match(/^bg-dummy-(\d+(?:\.\d+)?)$/);
+
+      if (bgBigMatch || bgRepeatMatch || bgDummyMatch) {
+        bgCount++;
+        i++;
+        const bodyLines: string[] = [];
+        while (i < lines.length && lines[i].trim() !== "```") {
+          bodyLines.push(lines[i]);
+          i++;
+        }
+        const text = bodyLines.join("\n").trim();
+        if (bgBigMatch) {
+          blocks.push({ type: "bg-big", rotate: Number(bgBigMatch[1]), text });
+        } else if (bgRepeatMatch) {
+          blocks.push({ type: "bg-repeat", rotate: Number(bgRepeatMatch[1]), gap: Number(bgRepeatMatch[2]), text });
+        } else if (bgDummyMatch) {
+          blocks.push({ type: "bg-dummy", lineHeight: Number(bgDummyMatch[1]), text });
+        }
+        i++;
+        continue;
+      }
+
       if (tag === "left-vertical" || tag === "right-vertical") {
         const side = tag === "left-vertical" ? "left" : "right";
         i++;
@@ -62,7 +89,6 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
         continue;
       }
 
-      // top / bottom
       const posMatch = tag.match(/^(top|bottom)-(left|center|right|justify)$/);
       if (posMatch) {
         const placement = posMatch[1] as "top" | "bottom";
@@ -82,7 +108,6 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
         continue;
       }
 
-      // flow
       const forceBr = (FLOW_ALIGNS_BR as readonly string[]).includes(tag);
       const baseTag = tag.replace("-br", "");
       if ((FLOW_ALIGNS as readonly string[]).includes(baseTag)) {
@@ -103,7 +128,6 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
         continue;
       }
 
-      // 인식 못한 fence는 무시
       i++;
       continue;
     }
@@ -125,5 +149,5 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
     i++;
   }
 
-  return { frontmatter, blocks };
+  return { frontmatter, blocks, bgWarning: bgCount > 1 };
 }
