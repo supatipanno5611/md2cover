@@ -4,6 +4,7 @@ export type InlineSegment = { text: string; bold: boolean };
 export type Block =
   | { type: "heading"; segments: InlineSegment[] }
   | { type: "paragraph"; segments: InlineSegment[] }
+  | { type: "block"; align: "left" | "center" | "right"; segments: InlineSegment[] }
   | { type: "divider" };
 
 export interface Frontmatter {
@@ -31,10 +32,35 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
   const { data, content } = matter(raw);
   const frontmatter = data as Frontmatter;
   const blocks: Block[] = [];
+  const lines = content.split("\n");
 
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
+  let i = 0;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+
+    const fenceMatch = trimmed.match(/^```(left|center|right|left-br|center-br|right-br)$/);
+    if (fenceMatch) {
+      const tag = fenceMatch[1];
+      const forceBr = tag.endsWith("-br");
+      const align = tag.replace("-br", "") as "left" | "center" | "right";
+      const sep = forceBr ? "<br>" : (frontmatter.linebreak === "manual" ? "<br>" : " ");
+
+      i++;
+      const segments: InlineSegment[] = [];
+      while (i < lines.length && lines[i].trim() !== "```") {
+        const lineTrimmed = lines[i].trim();
+        if (lineTrimmed) {
+          if (segments.length > 0) segments.push({ text: sep, bold: false });
+          segments.push(...parseInline(lineTrimmed));
+        }
+        i++;
+      }
+      if (segments.length > 0) blocks.push({ type: "block", align, segments });
+      i++;
+      continue;
+    }
+
+    if (!trimmed) { i++; continue; }
     if (trimmed === "---") {
       blocks.push({ type: "divider" });
     } else if (trimmed.startsWith("# ")) {
@@ -48,6 +74,7 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
         blocks.push({ type: "paragraph", segments: parseInline(trimmed) });
       }
     }
+    i++;
   }
 
   return { frontmatter, blocks };
