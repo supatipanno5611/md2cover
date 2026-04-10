@@ -75,6 +75,7 @@ export function render(
   const bodyLines = blocks.map((block) => {
     if (block.type === "divider") return `<hr>`;
     if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
+    if (block.type === "block") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
     return `<p>${renderSegments(block.segments)}</p>`;
   });
 
