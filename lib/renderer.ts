@@ -19,17 +19,22 @@ export function render(
   regularFont: string,
   boldColor: string,
   regularColor: string,
+  boldSize: string,
+  regularSize: string,
+  headingFont: string,
+  headingColor: string,
+  headingSize: string,
+  bgColor: string,
   customCss?: string
 ): string {
   const size = PAGE_SIZES[frontmatter.size ?? "b6"];
-  const textOption = frontmatter.align ?? "top";
-
   const alignMap = { top: "flex-start", middle: "center", bottom: "flex-end" };
-  const justifyContent = alignMap[textOption];
+  const justifyContent = alignMap[frontmatter.align ?? "top"];
 
   const fontFaces = [
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
+    headingFont && `@font-face { font-family: 'CoverHeading'; src: url('/fonts/bold/${headingFont}'); }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
@@ -37,7 +42,7 @@ export function render(
     body {
       width: ${size.width};
       height: ${size.height};
-      background: #fff;
+      background: ${bgColor};
       display: flex;
       flex-direction: column;
       justify-content: ${justifyContent};
@@ -45,24 +50,22 @@ export function render(
       overflow: hidden;
     }
     h1 {
-      font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
-      font-weight: 900;
-      font-size: 2.4rem;
+      font-family: ${headingFont ? "'CoverHeading'" : "'Noto Sans', sans-serif"};
+      font-size: ${headingSize};
       line-height: 1.25;
-      color: ${boldColor};
+      color: ${headingColor};
       margin-bottom: 6mm;
     }
     p {
       font-family: ${regularFont ? "'CoverRegular'" : "'Noto Sans', sans-serif"};
-      font-weight: 300;
-      font-size: 1.1rem;
+      font-size: ${regularSize};
       line-height: 1.7;
       color: ${regularColor};
       margin-bottom: 4mm;
     }
     strong {
       font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
-      font-weight: 900;
+      font-size: ${boldSize};
       color: ${boldColor};
     }
     hr {
@@ -75,7 +78,6 @@ export function render(
   const bodyLines = blocks.map((block) => {
     if (block.type === "divider") return `<hr>`;
     if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
-    if (block.type === "block") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
     return `<p>${renderSegments(block.segments)}</p>`;
   });
 

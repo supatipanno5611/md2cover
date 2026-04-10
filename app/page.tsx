@@ -41,6 +41,8 @@ export default function Home() {
   const [headingSize, setHeadingSize] = useState("2.4");
   const [headingUnit, setHeadingUnit] = useState("rem");
   const [bgColor, setBgColor] = useState("#ffffff");
+  const [selectedCss, setSelectedCss] = useState("");
+  const [templateFiles, setTemplateFiles] = useState<string[]>([]);
   const printFrameRef = useRef<HTMLIFrameElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -51,6 +53,9 @@ export default function Home() {
         setBoldFonts(data.bold);
         setRegularFonts(data.regular);
       });
+    fetch("/api/templates")
+      .then((r) => r.json())
+      .then(setTemplateFiles);
   }, []);
 
   const buildHtml = useCallback(async (
@@ -60,12 +65,13 @@ export default function Home() {
     bSize: string, rSize: string,
     heading: string, headingCol: string, hSize: string,
     bg: string,
+    cssFile: string,
   ) => {
     const { frontmatter, blocks } = parse(md);
     let customCss: string | undefined;
-    if (frontmatter.css) {
+    if (cssFile) {
       try {
-        const res = await fetch(`/templates/${frontmatter.css}`);
+        const res = await fetch(`/templates/${cssFile}`);
         if (res.ok) customCss = await res.text();
       } catch {}
     }
@@ -84,13 +90,14 @@ export default function Home() {
         `${boldSize}${boldUnit}`, `${regularSize}${regularUnit}`,
         headingFont, headingColor, `${headingSize}${headingUnit}`,
         bgColor,
+        selectedCss,
       ));
     }, 300);
   }, [
     markdown, boldFont, regularFont, boldColor, regularColor,
     boldSize, boldUnit, regularSize, regularUnit,
     headingFont, headingColor, headingSize, headingUnit,
-    buildHtml, bgColor,
+    buildHtml, bgColor, selectedCss,
   ]);
 
   const handlePrint = async () => {
@@ -100,6 +107,8 @@ export default function Home() {
       boldColor, regularColor,
       `${boldSize}${boldUnit}`, `${regularSize}${regularUnit}`,
       headingFont, headingColor, `${headingSize}${headingUnit}`,
+      bgColor,
+      selectedCss,
     );
     const frame = printFrameRef.current;
     if (!frame) return;
@@ -177,6 +186,13 @@ export default function Home() {
         <label className="font-label">
           배경색
           <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="color-input" />
+        </label>
+        <label className="font-label">
+          CSS 템플릿
+          <select value={selectedCss} onChange={(e) => setSelectedCss(e.target.value)} className="font-select">
+            <option value="">기본</option>
+            {templateFiles.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
         </label>
       </div>
 

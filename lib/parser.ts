@@ -4,14 +4,13 @@ export type InlineSegment = { text: string; bold: boolean };
 export type Block =
   | { type: "heading"; segments: InlineSegment[] }
   | { type: "paragraph"; segments: InlineSegment[] }
-  | { type: "block"; align: "left" | "center" | "right"; segments: InlineSegment[] }
+  | { type: "block"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
   | { type: "divider" };
 
 export interface Frontmatter {
   size?: "b6" | "a5" | "ma5";
   linebreak?: "auto" | "manual";
   align?: "top" | "middle" | "bottom";
-  css?: string;
 }
 
 function parseInline(text: string): InlineSegment[] {
@@ -38,11 +37,11 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
   while (i < lines.length) {
     const trimmed = lines[i].trim();
 
-    const fenceMatch = trimmed.match(/^```(left|center|right|left-br|center-br|right-br)$/);
+    const fenceMatch = trimmed.match(/^```(left|center|right|justify|left-br|center-br|right-br|justify-br)$/);
     if (fenceMatch) {
       const tag = fenceMatch[1];
       const forceBr = tag.endsWith("-br");
-      const align = tag.replace("-br", "") as "left" | "center" | "right";
+      const align = tag.replace("-br", "") as "left" | "center" | "right" | "justify";
       const sep = forceBr ? "<br>" : (frontmatter.linebreak === "manual" ? "<br>" : " ");
 
       i++;

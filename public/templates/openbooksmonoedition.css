@@ -1,0 +1,44 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10mm 8mm;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+h1 {
+  font-family: 'CoverBold', 'Noto Sans KR', sans-serif;
+  font-weight: 900;
+  font-size: 2.6rem;
+  line-height: 1.2;
+  color: #111;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #111;
+  margin: 0;
+}
+
+p {
+  font-family: 'CoverRegular', 'Noto Sans KR', sans-serif;
+  font-weight: 300;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: #555;
+  letter-spacing: 0.01em;
+}
+
+strong {
+  font-family: 'CoverBold', 'Noto Sans KR', sans-serif;
+  font-weight: 900;
+  color: #111;
+}
