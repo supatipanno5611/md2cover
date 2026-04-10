@@ -1,10 +1,13 @@
 import matter from "gray-matter";
 
 export type InlineSegment = { text: string; bold: boolean };
+
 export type Block =
   | { type: "heading"; segments: InlineSegment[] }
   | { type: "paragraph"; segments: InlineSegment[] }
-  | { type: "block"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
+  | { type: "flow"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
+  | { type: "position"; placement: "top" | "bottom"; align: "left" | "center" | "right" | "justify"; segments: InlineSegment[] }
+  | { type: "vertical"; side: "left" | "right"; chars: string[] }
   | { type: "divider" };
 
 export interface Frontmatter {
@@ -27,6 +30,10 @@ function parseInline(text: string): InlineSegment[] {
   return segments;
 }
 
+const FLOW_ALIGNS = ["left", "center", "right", "justify"] as const;
+const FLOW_ALIGNS_BR = ["left-br", "center-br", "right-br", "justify-br"] as const;
+type FlowAlign = typeof FLOW_ALIGNS[number];
+
 export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] } {
   const { data, content } = matter(raw);
   const frontmatter = data as Frontmatter;
@@ -37,24 +44,66 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[] 
   while (i < lines.length) {
     const trimmed = lines[i].trim();
 
-    const fenceMatch = trimmed.match(/^```(left|center|right|justify|left-br|center-br|right-br|justify-br)$/);
+    const fenceMatch = trimmed.match(/^```(.+)$/);
     if (fenceMatch) {
       const tag = fenceMatch[1];
-      const forceBr = tag.endsWith("-br");
-      const align = tag.replace("-br", "") as "left" | "center" | "right" | "justify";
-      const sep = forceBr ? "<br>" : (frontmatter.linebreak === "manual" ? "<br>" : " ");
 
-      i++;
-      const segments: InlineSegment[] = [];
-      while (i < lines.length && lines[i].trim() !== "```") {
-        const lineTrimmed = lines[i].trim();
-        if (lineTrimmed) {
-          if (segments.length > 0) segments.push({ text: sep, bold: false });
-          segments.push(...parseInline(lineTrimmed));
-        }
+      // vertical
+      if (tag === "left-vertical" || tag === "right-vertical") {
+        const side = tag === "left-vertical" ? "left" : "right";
         i++;
+        const chars: string[] = [];
+        while (i < lines.length && lines[i].trim() !== "```") {
+          for (const ch of lines[i]) chars.push(ch);
+          i++;
+        }
+        if (chars.length > 0) blocks.push({ type: "vertical", side, chars });
+        i++;
+        continue;
       }
-      if (segments.length > 0) blocks.push({ type: "block", align, segments });
+
+      // top / bottom
+      const posMatch = tag.match(/^(top|bottom)-(left|center|right|justify)$/);
+      if (posMatch) {
+        const placement = posMatch[1] as "top" | "bottom";
+        const align = posMatch[2] as "left" | "center" | "right" | "justify";
+        i++;
+        const segments: InlineSegment[] = [];
+        while (i < lines.length && lines[i].trim() !== "```") {
+          const lineTrimmed = lines[i].trim();
+          if (lineTrimmed) {
+            if (segments.length > 0) segments.push({ text: " ", bold: false });
+            segments.push(...parseInline(lineTrimmed));
+          }
+          i++;
+        }
+        if (segments.length > 0) blocks.push({ type: "position", placement, align, segments });
+        i++;
+        continue;
+      }
+
+      // flow
+      const forceBr = (FLOW_ALIGNS_BR as readonly string[]).includes(tag);
+      const baseTag = tag.replace("-br", "");
+      if ((FLOW_ALIGNS as readonly string[]).includes(baseTag)) {
+        const align = baseTag as FlowAlign;
+        const sep = forceBr ? "<br>" : (frontmatter.linebreak === "manual" ? "<br>" : " ");
+        i++;
+        const segments: InlineSegment[] = [];
+        while (i < lines.length && lines[i].trim() !== "```") {
+          const lineTrimmed = lines[i].trim();
+          if (lineTrimmed) {
+            if (segments.length > 0) segments.push({ text: sep, bold: false });
+            segments.push(...parseInline(lineTrimmed));
+          }
+          i++;
+        }
+        if (segments.length > 0) blocks.push({ type: "flow", align, segments });
+        i++;
+        continue;
+      }
+
+      // 인식 못한 fence는 무시
       i++;
       continue;
     }

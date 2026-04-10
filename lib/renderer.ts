@@ -28,13 +28,13 @@ export function render(
   customCss?: string
 ): string {
   const size = PAGE_SIZES[frontmatter.size ?? "b6"];
+  const textOption = frontmatter.align ?? "top";
   const alignMap = { top: "flex-start", middle: "center", bottom: "flex-end" };
-  const justifyContent = alignMap[frontmatter.align ?? "top"];
+  const justifyContent = alignMap[textOption];
 
   const fontFaces = [
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
-    headingFont && `@font-face { font-family: 'CoverHeading'; src: url('/fonts/bold/${headingFont}'); }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
@@ -48,9 +48,10 @@ export function render(
       justify-content: ${justifyContent};
       padding: 12mm 10mm;
       overflow: hidden;
+      position: relative;
     }
     h1 {
-      font-family: ${headingFont ? "'CoverHeading'" : "'Noto Sans', sans-serif"};
+      font-family: ${headingFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
       font-size: ${headingSize};
       line-height: 1.25;
       color: ${headingColor};
@@ -65,7 +66,6 @@ export function render(
     }
     strong {
       font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
-      font-size: ${boldSize};
       color: ${boldColor};
     }
     hr {
@@ -73,12 +73,49 @@ export function render(
       border-top: 1px solid #ddd;
       margin: 4mm 0;
     }
+    .pos {
+      position: absolute;
+      left: 10mm;
+      right: 10mm;
+      font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
+      font-size: ${boldSize};
+      color: ${boldColor};
+    }
+    .pos-top { top: 12mm; }
+    .pos-bottom { bottom: 12mm; }
+    .pos-left { text-align: left; }
+    .pos-center { text-align: center; }
+    .pos-right { text-align: right; }
+    .pos-justify { text-align: justify; }
+    .vertical {
+      position: absolute;
+      top: 12mm;
+      bottom: 12mm;
+      display: flex;
+      flex-direction: column;
+      font-family: ${boldFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
+      font-size: ${boldSize};
+      color: ${boldColor};
+      line-height: 1.25;
+      justify-content: center;
+    }
+    .vertical-left { left: 10mm; }
+    .vertical-right { right: 10mm; }
   `;
 
   const bodyLines = blocks.map((block) => {
     if (block.type === "divider") return `<hr>`;
     if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
-    return `<p>${renderSegments(block.segments)}</p>`;
+    if (block.type === "paragraph") return `<p>${renderSegments(block.segments)}</p>`;
+    if (block.type === "flow") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
+    if (block.type === "position") {
+      return `<p class="pos pos-${block.placement} pos-${block.align}">${renderSegments(block.segments)}</p>`;
+    }
+    if (block.type === "vertical") {
+      const charSpans = block.chars.map((ch) => `<span>${ch}</span>`).join("\n");
+      return `<div class="vertical vertical-${block.side}">${charSpans}</div>`;
+    }
+    return "";
   });
 
   return `<!DOCTYPE html>
