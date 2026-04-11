@@ -12,8 +12,11 @@ function readFonts(subdir: string): string[] {
 }
 
 export function GET() {
+  const bold = readFonts("bold");
+  const regular = readFonts("regular");
   return NextResponse.json({
-    bold: readFonts("bold"),
-    regular: readFonts("regular"),
+    bold,
+    regular,
+    bg: [...bold, ...regular],
   });
 }
