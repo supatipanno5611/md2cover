@@ -1,4 +1,4 @@
-import { Block, Frontmatter, InlineSegment } from "./parser";
+import { Block, InlineSegment } from "./parser";
 
 export const PAGE_SIZES: Record<string, { width: string; height: string }> = {
   b6: { width: "128mm", height: "182mm" },
@@ -93,7 +93,8 @@ function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: st
 
 export function render(
   blocks: Block[],
-  frontmatter: Frontmatter,
+  size: string,
+  linebreak: "auto" | "manual",
   boldFont: string,
   regularFont: string,
   boldColor: string,
@@ -108,26 +109,23 @@ export function render(
   bgTextColor: string,
   bgSize: string,
 ): string {
-  const size = PAGE_SIZES[frontmatter.size ?? "b6"];
-  const textOption = frontmatter.align ?? "top";
-  const alignMap = { top: "flex-start", middle: "center", bottom: "flex-end" };
-  const justifyContent = alignMap[textOption];
+  const pageSize = PAGE_SIZES[size] ?? PAGE_SIZES["b6"];
 
   const fontFaces = [
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
-    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/bg/${bgFont}'); }`,
+    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/bold/${bgFont}'); font-style: normal; }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      width: ${size.width};
-      height: ${size.height};
+      width: ${pageSize.width};
+      height: ${pageSize.height};
       background: ${bgColor};
       display: flex;
       flex-direction: column;
-      justify-content: ${justifyContent};
+      justify-content: flex-start;
       padding: 12mm 10mm;
       overflow: hidden;
       position: relative;
@@ -193,15 +191,27 @@ export function render(
     .vertical-right { right: 10mm; }
   `;
 
-  const bgBlock = blocks.find((b) => b.type === "bg-big" || b.type === "bg-repeat" || b.type === "bg-continuous" || b.type === "bg-dummy");
+  const bgBlock = blocks.find((b) =>
+    b.type === "bg-big" || b.type === "bg-repeat" || b.type === "bg-continuous" || b.type === "bg-dummy"
+  );
   const bgHtml = bgBlock ? renderBgBlock(bgBlock, bgFont, bgTextColor, bgSize) : "";
 
   const bodyLines = blocks
-    .filter((b) => b.type !== "bg-big" && b.type !== "bg-repeat" && b.type !== "bg-continuous" && b.type !== "bg-dummy")
+    .filter((b) =>
+      b.type !== "bg-big" && b.type !== "bg-repeat" && b.type !== "bg-continuous" && b.type !== "bg-dummy"
+    )
     .map((block) => {
       if (block.type === "divider") return `<hr>`;
       if (block.type === "heading") return `<h1>${renderSegments(block.segments)}</h1>`;
-      if (block.type === "paragraph") return `<p>${renderSegments(block.segments)}</p>`;
+      if (block.type === "paragraph") {
+        if (linebreak === "manual") {
+          const segs = block.segments.map((s) =>
+            s.text === " " ? { ...s, text: "<br>" } : s
+          );
+          return `<p>${renderSegments(segs)}</p>`;
+        }
+        return `<p>${renderSegments(block.segments)}</p>`;
+      }
       if (block.type === "flow") return `<p style="text-align:${block.align}">${renderSegments(block.segments)}</p>`;
       if (block.type === "position") {
         return `<p class="pos pos-${block.placement} pos-${block.align}">${renderSegments(block.segments)}</p>`;

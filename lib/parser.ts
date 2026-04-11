@@ -14,11 +14,9 @@ export type Block =
   | { type: "bg-continuous"; rotate: number; gap: number; text: string }
   | { type: "bg-dummy"; lineHeight: number; text: string };
 
-export interface Frontmatter {
-  size?: "b6" | "a5" | "ma5";
-  linebreak?: "auto" | "manual";
-  align?: "top" | "middle" | "bottom";
-}
+const FLOW_ALIGNS = ["left", "center", "right", "justify"] as const;
+const FLOW_ALIGNS_BR = ["left-br", "center-br", "right-br", "justify-br"] as const;
+type FlowAlign = typeof FLOW_ALIGNS[number];
 
 function parseInline(text: string): InlineSegment[] {
   const segments: InlineSegment[] = [];
@@ -34,13 +32,8 @@ function parseInline(text: string): InlineSegment[] {
   return segments;
 }
 
-const FLOW_ALIGNS = ["left", "center", "right", "justify"] as const;
-const FLOW_ALIGNS_BR = ["left-br", "center-br", "right-br", "justify-br"] as const;
-type FlowAlign = typeof FLOW_ALIGNS[number];
-
-export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[]; bgWarning: boolean } {
-  const { data, content } = matter(raw);
-  const frontmatter = data as Frontmatter;
+export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
+  const { content } = matter(raw);
   const blocks: Block[] = [];
   const lines = content.split("\n");
   let bgCount = 0;
@@ -116,13 +109,12 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[];
       const baseTag = tag.replace("-br", "");
       if ((FLOW_ALIGNS as readonly string[]).includes(baseTag)) {
         const align = baseTag as FlowAlign;
-        const sep = forceBr ? "<br>" : (frontmatter.linebreak === "manual" ? "<br>" : " ");
         i++;
         const segments: InlineSegment[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
           const lineTrimmed = lines[i].trim();
           if (lineTrimmed) {
-            if (segments.length > 0) segments.push({ text: sep, bold: false });
+            if (segments.length > 0) segments.push({ text: forceBr ? "<br>" : " ", bold: false });
             segments.push(...parseInline(lineTrimmed));
           }
           i++;
@@ -144,8 +136,7 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[];
     } else {
       const last = blocks[blocks.length - 1];
       if (last?.type === "paragraph") {
-        const sep = frontmatter.linebreak === "manual" ? "<br>" : " ";
-        last.segments.push({ text: sep, bold: false }, ...parseInline(trimmed));
+        last.segments.push({ text: " ", bold: false }, ...parseInline(trimmed));
       } else {
         blocks.push({ type: "paragraph", segments: parseInline(trimmed) });
       }
@@ -153,5 +144,5 @@ export function parse(raw: string): { frontmatter: Frontmatter; blocks: Block[];
     i++;
   }
 
-  return { frontmatter, blocks, bgWarning: bgCount > 1 };
+  return { blocks, bgWarning: bgCount > 1 };
 }
