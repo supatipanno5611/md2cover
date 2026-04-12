@@ -4,6 +4,16 @@ import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
+import { autocompletion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+
+function brCompletion(context: CompletionContext): CompletionResult | null {
+  const word = context.matchBefore(/<\w*/);
+  if (!word) return null;
+  return {
+    from: word.from,
+    options: [{ label: "<br>", type: "keyword", boost: 99, detail: "줄바꿈" }],
+  };
+}
 
 interface Props {
   value: string;
@@ -19,6 +29,7 @@ const editorTheme = EditorView.theme({
   ".cm-activeLine": { background: "#f0ebe3" },
   ".cm-cursor": { borderLeftColor: "#1a1a1a" },
   ".cm-selectionBackground": { background: "#ddd6c8 !important" },
+  ".cm-tooltip.cm-tooltip-autocomplete": { minWidth: "160px" },
 });
 
 export default function Editor({ value, onChange }: Props) {
@@ -38,11 +49,13 @@ export default function Editor({ value, onChange }: Props) {
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChange(update.state.doc.toString());
           }),
+          autocompletion({ override: [brCompletion] }),
         ],
       }),
       parent: ref.current,
     });
     viewRef.current = view;
+    view.focus();
     return () => view.destroy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

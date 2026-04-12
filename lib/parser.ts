@@ -37,6 +37,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
   const blocks: Block[] = [];
   const lines = content.split("\n");
   let bgCount = 0;
+  let paragraphBreak = false;
 
   let i = 0;
   while (i < lines.length) {
@@ -56,7 +57,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         i++;
         const bodyLines: string[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
-          if (!lines[i].trim().startsWith("//")) bodyLines.push(lines[i]);
+          bodyLines.push(lines[i]);
           i++;
         }
         const text = bodyLines.join("\n").trim();
@@ -70,6 +71,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
           blocks.push({ type: "bg-dummy", lineHeight: Number(bgDummyMatch[1]), text });
         }
         i++;
+        paragraphBreak = false;
         continue;
       }
 
@@ -78,13 +80,12 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         i++;
         const chars: string[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
-          if (!lines[i].trim().startsWith("//")) {
-            for (const ch of lines[i]) chars.push(ch);
-          }
+          for (const ch of lines[i]) chars.push(ch);
           i++;
         }
         if (chars.length > 0) blocks.push({ type: "vertical", side, chars });
         i++;
+        paragraphBreak = false;
         continue;
       }
 
@@ -96,7 +97,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         const segments: InlineSegment[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
           const lineTrimmed = lines[i].trim();
-          if (lineTrimmed && !lineTrimmed.startsWith("//")) {
+          if (lineTrimmed) {
             if (segments.length > 0) segments.push({ text: " ", bold: false });
             segments.push(...parseInline(lineTrimmed));
           }
@@ -104,6 +105,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         }
         if (segments.length > 0) blocks.push({ type: "position", placement, align, segments });
         i++;
+        paragraphBreak = false;
         continue;
       }
 
@@ -115,7 +117,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         const segments: InlineSegment[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
           const lineTrimmed = lines[i].trim();
-          if (lineTrimmed && !lineTrimmed.startsWith("//")) {
+          if (lineTrimmed) {
             if (segments.length > 0) segments.push({ text: forceBr ? "<br>" : " ", bold: false });
             segments.push(...parseInline(lineTrimmed));
           }
@@ -123,6 +125,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         }
         if (segments.length > 0) blocks.push({ type: "flow", align, segments });
         i++;
+        paragraphBreak = false;
         continue;
       }
 
@@ -130,20 +133,26 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
       continue;
     }
 
-    if (!trimmed) { i++; continue; }
-    if (trimmed.startsWith("//")) { i++; continue; }
+    if (!trimmed) {
+      paragraphBreak = true;
+      i++;
+      continue;
+    }
 
     if (trimmed === "---") {
       blocks.push({ type: "divider" });
+      paragraphBreak = false;
     } else if (trimmed.startsWith("# ")) {
       blocks.push({ type: "heading", segments: parseInline(trimmed.slice(2)) });
+      paragraphBreak = false;
     } else {
       const last = blocks[blocks.length - 1];
-      if (last?.type === "paragraph") {
+      if (!paragraphBreak && last?.type === "paragraph") {
         last.segments.push({ text: " ", bold: false }, ...parseInline(trimmed));
       } else {
         blocks.push({ type: "paragraph", segments: parseInline(trimmed) });
       }
+      paragraphBreak = false;
     }
     i++;
   }
