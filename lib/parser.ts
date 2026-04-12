@@ -139,6 +139,8 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
       continue;
     }
 
+    if (trimmed.startsWith("//")) { i++; continue; }
+
     if (trimmed === "---") {
       blocks.push({ type: "divider" });
       paragraphBreak = false;
