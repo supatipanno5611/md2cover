@@ -112,9 +112,10 @@ export function render(
   const pageSize = PAGE_SIZES[size] ?? PAGE_SIZES["b6"];
 
   const fontFaces = [
+    headingFont && `@font-face { font-family: 'CoverHeading'; src: url('/fonts/title/${headingFont}'); }`,
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
-    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/bold/${bgFont}'); font-style: normal; }`,
+    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/background/${bgFont}'); font-style: normal; }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
@@ -131,7 +132,7 @@ export function render(
       position: relative;
     }
     h1 {
-      font-family: ${headingFont ? "'CoverBold'" : "'Noto Sans', sans-serif"};
+      font-family: ${headingFont ? "'CoverHeading'" : "'Noto Sans', sans-serif"};
       font-size: ${headingSize};
       line-height: 1.25;
       color: ${headingColor};

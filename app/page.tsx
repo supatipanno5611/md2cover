@@ -29,9 +29,10 @@ export default function Home() {
   const [linebreak, setLinebreak] = useState<"auto" | "manual">("auto");
   const [bgColor, setBgColor] = useState("#ffffff");
 
+  const [titleFonts, setTitleFonts] = useState<string[]>([]);
   const [boldFonts, setBoldFonts] = useState<string[]>([]);
   const [regularFonts, setRegularFonts] = useState<string[]>([]);
-  const [bgFonts, setBgFonts] = useState<string[]>([]);
+  const [backgroundFonts, setBackgroundFonts] = useState<string[]>([]);
 
   const [headingFont, setHeadingFont] = useState("");
   const [headingColor, setHeadingColor] = useState("#111111");
@@ -60,9 +61,10 @@ export default function Home() {
     fetch("/api/fonts")
       .then((r) => r.json())
       .then((data) => {
+        setTitleFonts(data.title);
         setBoldFonts(data.bold);
         setRegularFonts(data.regular);
-        setBgFonts(data.bg);
+        setBackgroundFonts(data.background);
       });
   }, []);
 
@@ -121,10 +123,10 @@ export default function Home() {
   ];
 
   const fontConfigs = {
-    heading: { label: "제목체", fonts: boldFonts, font: headingFont, setFont: setHeadingFont, color: headingColor, setColor: setHeadingColor, size: headingSize, setSize: setHeadingSize, unit: headingUnit, setUnit: setHeadingUnit },
-    bold:    { label: "강조체", fonts: boldFonts, font: boldFont, setFont: setBoldFont, color: boldColor, setColor: setBoldColor, size: boldSize, setSize: setBoldSize, unit: boldUnit, setUnit: setBoldUnit },
-    regular: { label: "흐림체", fonts: regularFonts, font: regularFont, setFont: setRegularFont, color: regularColor, setColor: setRegularColor, size: regularSize, setSize: setRegularSize, unit: regularUnit, setUnit: setRegularUnit },
-    bg:      { label: "배경체", fonts: bgFonts, font: bgFont, setFont: setBgFont, color: bgTextColor, setColor: setBgTextColor, size: bgSize, setSize: setBgSize, unit: bgUnit, setUnit: setBgUnit },
+    heading: { label: "제목체", fonts: titleFonts,      font: headingFont, setFont: setHeadingFont, color: headingColor, setColor: setHeadingColor, size: headingSize, setSize: setHeadingSize, unit: headingUnit, setUnit: setHeadingUnit },
+    bold:    { label: "강조체", fonts: boldFonts,       font: boldFont,    setFont: setBoldFont,    color: boldColor,    setColor: setBoldColor,    size: boldSize,    setSize: setBoldSize,    unit: boldUnit,    setUnit: setBoldUnit },
+    regular: { label: "흐림체", fonts: regularFonts,    font: regularFont, setFont: setRegularFont, color: regularColor, setColor: setRegularColor, size: regularSize, setSize: setRegularSize, unit: regularUnit, setUnit: setRegularUnit },
+    bg:      { label: "배경체", fonts: backgroundFonts, font: bgFont,      setFont: setBgFont,      color: bgTextColor,  setColor: setBgTextColor,  size: bgSize,      setSize: setBgSize,      unit: bgUnit,      setUnit: setBgUnit },
   };
 
   function renderSettingsRow() {

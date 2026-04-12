@@ -1,5 +1,8 @@
-# fonts
-public/fonts
+# fonts (파일만 제외, 폴더 구조는 유지)
+public/fonts/**/*.ttf
+public/fonts/**/*.otf
+public/fonts/**/*.woff
+public/fonts/**/*.woff2
 
 # dependencies
 node_modules/
