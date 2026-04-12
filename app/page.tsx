@@ -28,7 +28,7 @@ export default function Home() {
 
   const [size, setSize] = useState<SizeKey>("b6");
   const [linebreak, setLinebreak] = useState<"auto" | "manual">("auto");
-  const [bgColor, setBgColor] = useState("#ffffff");
+  const [pageColor, setPageColor] = useState("#ffffff");
 
   const [boldFonts, setBoldFonts] = useState<string[]>([]);
   const [regularFonts, setRegularFonts] = useState<string[]>([]);
@@ -64,7 +64,7 @@ export default function Home() {
       .then((data) => {
         setBoldFonts(data.bold);
         setRegularFonts(data.regular);
-        setBgFonts(data.bg);
+        setBgFonts(data.background);
       });
   }, []);
 
@@ -83,10 +83,10 @@ export default function Home() {
       boldColor, regularColor,
       `${boldSize}${boldUnit}`, `${regularSize}${regularUnit}`,
       headingFont, headingColor, `${headingSize}${headingUnit}`,
-      bgColor, bgFont, bgTextColor, `${bgSize}${bgUnit}`,
+      pageColor, bgFont, bgTextColor, `${bgSize}${bgUnit}`,
     );
   }, [
-    size, linebreak, bgColor,
+    size, linebreak, pageColor,
     boldFont, regularFont, boldColor, regularColor, boldSize, boldUnit, regularSize, regularUnit,
     headingFont, headingColor, headingSize, headingUnit,
     bgFont, bgTextColor, bgSize, bgUnit,
@@ -168,8 +168,8 @@ export default function Home() {
           </button>
         </label>
         <label className="font-label">
-          배경색
-          <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="color-input" />
+          바탕색
+          <input type="text" value={pageColor} onChange={(e) => setPageColor(e.target.value)} className="color-input" />
         </label>
       </div>
     );

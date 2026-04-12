@@ -12,20 +12,20 @@ function renderSegments(segments: InlineSegment[]): string {
     .join("");
 }
 
-function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: string): string {
+function renderBgBlock(block: Block, bgFont: string, textColor: string, bgSize: string): string {
   const fontFamily = bgFont ? "'CoverBg'" : "'Noto Sans', sans-serif";
 
   if (block.type === "bg-big") {
     return `
 <div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-  <div style="font-family:${fontFamily};font-size:${bgSize};line-height:1;white-space:nowrap;transform:rotate(${block.rotate}deg);color:${bgColor};">${block.text}</div>
+  <div style="font-family:${fontFamily};font-size:${bgSize};line-height:1;white-space:nowrap;transform:rotate(${block.rotate}deg);color:${textColor};">${block.text}</div>
 </div>`;
   }
 
   if (block.type === "bg-repeat") {
     return `
 <div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;">
-  <div id="bg-repeat-inner" data-text="${block.text.replace(/"/g, "&quot;")}" data-rotate="${block.rotate}" data-gap="${block.gap}" style="font-family:${fontFamily};color:${bgColor};position:absolute;"></div>
+  <div id="bg-repeat-inner" data-text="${block.text.replace(/"/g, "&quot;")}" data-rotate="${block.rotate}" data-gap="${block.gap}" style="font-family:${fontFamily};color:${textColor};position:absolute;"></div>
 </div>
 <script>
 (function() {
@@ -60,7 +60,7 @@ function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: st
   if (block.type === "bg-continuous") {
     return `
 <div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;">
-  <div id="bg-continuous-inner" style="position:absolute;font-family:${fontFamily};font-size:${bgSize};line-height:${block.gap}px;color:${bgColor};word-break:break-all;overflow:hidden;"></div>
+  <div id="bg-continuous-inner" style="position:absolute;font-family:${fontFamily};font-size:${bgSize};line-height:${block.gap}px;color:${textColor};word-break:break-all;overflow:hidden;"></div>
 </div>
 <script>
 (function() {
@@ -84,7 +84,7 @@ function renderBgBlock(block: Block, bgFont: string, bgColor: string, bgSize: st
   if (block.type === "bg-dummy") {
     return `
 <div id="bg-layer" style="position:absolute;inset:0;z-index:-1;overflow:hidden;padding:12mm 10mm;">
-  <div style="font-family:${fontFamily};font-size:${bgSize};color:${bgColor};text-align:justify;line-height:${block.lineHeight};">${block.text}</div>
+  <div style="font-family:${fontFamily};font-size:${bgSize};color:${textColor};text-align:justify;line-height:${block.lineHeight};">${block.text}</div>
 </div>`;
   }
 
@@ -104,7 +104,7 @@ export function render(
   headingFont: string,
   headingColor: string,
   headingSize: string,
-  bgColor: string,
+  pageColor: string,
   bgFont: string,
   bgTextColor: string,
   bgSize: string,
@@ -127,7 +127,7 @@ export function render(
     body {
       width: ${pageSize.width};
       height: ${pageSize.height};
-      background: ${bgColor};
+      background: ${pageColor};
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
