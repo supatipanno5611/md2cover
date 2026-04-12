@@ -10,12 +10,13 @@ const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 const DEFAULT_MD = `# 제목을 입력하세요.
 
 원하는 결과물을 만들기 위해 **필요한 효과와 기술만 간결하게** 사용하며 **빠른 작업 속도**를 추구합니다. 그 이후엔 필요 없는 **절차는 모두 과감히 생략**하고 기존의 목표에만 충실할 수 있도록 주의를 기울입니다.
+// 이렇게 슬래시 두 번으로 시작하는 행은 주석 처리되어 화면에 나타나지 않습니다.
 `;
 
 const SIZE_ORDER = ["b6", "a5", "ma5"] as const;
 type SizeKey = typeof SIZE_ORDER[number];
 const UNITS = ["rem", "px", "pt"] as const;
-type ToolTab = "heading" | "bold" | "regular" | "bg" | "etc";
+type ToolTab = "heading" | "bold" | "regular" | "bg" | "etc" | "template";
 
 const MM_TO_CSS_PX = 96 / 25.4;
 
@@ -29,10 +30,10 @@ export default function Home() {
   const [linebreak, setLinebreak] = useState<"auto" | "manual">("auto");
   const [bgColor, setBgColor] = useState("#ffffff");
 
-  const [titleFonts, setTitleFonts] = useState<string[]>([]);
   const [boldFonts, setBoldFonts] = useState<string[]>([]);
   const [regularFonts, setRegularFonts] = useState<string[]>([]);
-  const [backgroundFonts, setBackgroundFonts] = useState<string[]>([]);
+  const [bgFonts, setBgFonts] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<string[]>([]);
 
   const [headingFont, setHeadingFont] = useState("");
   const [headingColor, setHeadingColor] = useState("#111111");
@@ -61,11 +62,16 @@ export default function Home() {
     fetch("/api/fonts")
       .then((r) => r.json())
       .then((data) => {
-        setTitleFonts(data.title);
         setBoldFonts(data.bold);
         setRegularFonts(data.regular);
-        setBackgroundFonts(data.background);
+        setBgFonts(data.bg);
       });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/templates")
+      .then((r) => r.json())
+      .then(setTemplates);
   }, []);
 
   const buildHtml = useCallback((md: string) => {
@@ -120,17 +126,39 @@ export default function Home() {
     { key: "regular", label: "흐림" },
     { key: "bg", label: "배경" },
     { key: "etc", label: "기타" },
+    { key: "template", label: "템플릿" },
   ];
 
   const fontConfigs = {
-    heading: { label: "제목체", fonts: titleFonts,      font: headingFont, setFont: setHeadingFont, color: headingColor, setColor: setHeadingColor, size: headingSize, setSize: setHeadingSize, unit: headingUnit, setUnit: setHeadingUnit },
-    bold:    { label: "강조체", fonts: boldFonts,       font: boldFont,    setFont: setBoldFont,    color: boldColor,    setColor: setBoldColor,    size: boldSize,    setSize: setBoldSize,    unit: boldUnit,    setUnit: setBoldUnit },
-    regular: { label: "흐림체", fonts: regularFonts,    font: regularFont, setFont: setRegularFont, color: regularColor, setColor: setRegularColor, size: regularSize, setSize: setRegularSize, unit: regularUnit, setUnit: setRegularUnit },
-    bg:      { label: "배경체", fonts: backgroundFonts, font: bgFont,      setFont: setBgFont,      color: bgTextColor,  setColor: setBgTextColor,  size: bgSize,      setSize: setBgSize,      unit: bgUnit,      setUnit: setBgUnit },
+    heading: { label: "제목체", fonts: boldFonts, font: headingFont, setFont: setHeadingFont, color: headingColor, setColor: setHeadingColor, size: headingSize, setSize: setHeadingSize, unit: headingUnit, setUnit: setHeadingUnit },
+    bold:    { label: "강조체", fonts: boldFonts, font: boldFont, setFont: setBoldFont, color: boldColor, setColor: setBoldColor, size: boldSize, setSize: setBoldSize, unit: boldUnit, setUnit: setBoldUnit },
+    regular: { label: "흐림체", fonts: regularFonts, font: regularFont, setFont: setRegularFont, color: regularColor, setColor: setRegularColor, size: regularSize, setSize: setRegularSize, unit: regularUnit, setUnit: setRegularUnit },
+    bg:      { label: "배경체", fonts: bgFonts, font: bgFont, setFont: setBgFont, color: bgTextColor, setColor: setBgTextColor, size: bgSize, setSize: setBgSize, unit: bgUnit, setUnit: setBgUnit },
   };
 
   function renderSettingsRow() {
     if (!toolTab) return null;
+
+    if (toolTab === "template") return (
+      <div className="settings-row">
+        {templates.length === 0 && (
+          <span className="font-label">public/templates/ 에 .md 파일을 추가하세요</span>
+        )}
+        {templates.map((f) => (
+          <button
+            key={f}
+            className="btn-toggle"
+            onClick={() =>
+              fetch(`/templates/${encodeURIComponent(f)}`)
+                .then((r) => r.text())
+                .then(setMarkdown)
+            }
+          >
+            {f.replace(/\.md$/, "")}
+          </button>
+        ))}
+      </div>
+    );
 
     if (toolTab === "etc") return (
       <div className="settings-row">

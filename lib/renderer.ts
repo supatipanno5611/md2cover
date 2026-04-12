@@ -115,10 +115,14 @@ export function render(
     headingFont && `@font-face { font-family: 'CoverHeading'; src: url('/fonts/title/${headingFont}'); }`,
     boldFont && `@font-face { font-family: 'CoverBold'; src: url('/fonts/bold/${boldFont}'); }`,
     regularFont && `@font-face { font-family: 'CoverRegular'; src: url('/fonts/regular/${regularFont}'); }`,
-    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/background/${bgFont}'); font-style: normal; }`,
+    bgFont && `@font-face { font-family: 'CoverBg'; src: url('/fonts/background/${bgFont}'); }`,
   ].filter(Boolean).join("\n");
 
   const defaultCss = `
+    @page {
+      size: ${pageSize.width} ${pageSize.height};
+      margin: 0;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: ${pageSize.width};

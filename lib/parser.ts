@@ -56,7 +56,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         i++;
         const bodyLines: string[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
-          bodyLines.push(lines[i]);
+          if (!lines[i].trim().startsWith("//")) bodyLines.push(lines[i]);
           i++;
         }
         const text = bodyLines.join("\n").trim();
@@ -78,7 +78,9 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         i++;
         const chars: string[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
-          for (const ch of lines[i]) chars.push(ch);
+          if (!lines[i].trim().startsWith("//")) {
+            for (const ch of lines[i]) chars.push(ch);
+          }
           i++;
         }
         if (chars.length > 0) blocks.push({ type: "vertical", side, chars });
@@ -94,7 +96,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         const segments: InlineSegment[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
           const lineTrimmed = lines[i].trim();
-          if (lineTrimmed) {
+          if (lineTrimmed && !lineTrimmed.startsWith("//")) {
             if (segments.length > 0) segments.push({ text: " ", bold: false });
             segments.push(...parseInline(lineTrimmed));
           }
@@ -113,7 +115,7 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
         const segments: InlineSegment[] = [];
         while (i < lines.length && lines[i].trim() !== "```") {
           const lineTrimmed = lines[i].trim();
-          if (lineTrimmed) {
+          if (lineTrimmed && !lineTrimmed.startsWith("//")) {
             if (segments.length > 0) segments.push({ text: forceBr ? "<br>" : " ", bold: false });
             segments.push(...parseInline(lineTrimmed));
           }
@@ -129,6 +131,8 @@ export function parse(raw: string): { blocks: Block[]; bgWarning: boolean } {
     }
 
     if (!trimmed) { i++; continue; }
+    if (trimmed.startsWith("//")) { i++; continue; }
+
     if (trimmed === "---") {
       blocks.push({ type: "divider" });
     } else if (trimmed.startsWith("# ")) {
